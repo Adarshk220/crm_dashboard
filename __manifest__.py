@@ -12,6 +12,7 @@
     'application': True,
     'assets': {
         'web.assets_backend': [
+            'crm_dashboard/static/src/css/crm_dashboard.css',
             'crm_dashboard/static/src/js/crm_dashboard.js',
             'crm_dashboard/static/src/xml/crm_dashboard_template.xml',
         ],

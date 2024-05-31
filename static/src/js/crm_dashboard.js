@@ -2,16 +2,25 @@
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { _t } from "@web/core/l10n/translation";
-import { Component } from  "@odoo/owl";
+import { Component, useRef, onWillStart, onMounted } from  "@odoo/owl";
 const actionRegistry = registry.category("actions");
+import { loadJS } from "@web/core/assets";
 class CrmDashboard extends Component {
     setup() {
          super.setup()
          this.orm = useService('orm')
          this.actionService = useService("action");
          this._fetch_data('year')
+         this.chartRef = useRef("lost_lead");
+         this.doughnutRef = useRef("lead_medium");
+         this.linechartRef = useRef("lead_campaign");
+         this.pieRef = useRef("lead_activity");
+        onWillStart(async ()=>{
+               await loadJS("https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js")
+        })
+   onMounted(()=>this.renderChart())
    }
-   _fetch_data(){
+   _fetch_data(IntervalValue){
       var self = this;
       $('#my_lead').empty();
       $('#my_opportunity').empty();
@@ -25,7 +34,6 @@ class CrmDashboard extends Component {
                $('#revenue').append('<span>' + result.currency + result.revenue + '</span>');
                $('#win_ratio').append('<span>' + result.win_ratio + '%' + '</span>');
       });
-      console.log(IntervalValue,'hiiihi')
    };
    async _OnClickLeads(){
         const IntervalValue = $('#timeInterval').find(":selected").val();
@@ -44,7 +52,7 @@ class CrmDashboard extends Component {
    }
    async _OnClickOpportunities(){
         const IntervalValue = $('#timeInterval').find(":selected").val();
-        const result = await this.orm.call("crm.lead", "get_tiles_data", [], {});
+        const result = await this.orm.call("crm.lead", "get_tiles_data", [IntervalValue], {});
         const opportunity_ids = result.opportunity_ids
         console.log(opportunity_ids)
         const action = await this.actionService.doAction({
@@ -56,6 +64,130 @@ class CrmDashboard extends Component {
                 target: 'current',
             });
    }
+   async _OnClickExpectedRevenue(){
+        const IntervalValue = $('#timeInterval').find(":selected").val();
+        const result = await this.orm.call("crm.lead", "get_tiles_data", [IntervalValue], {});
+        const opportunity_ids = result.opportunity_ids
+        console.log(opportunity_ids)
+        const action = await this.actionService.doAction({
+                name: _t('Expected Revenue'),
+                type: 'ir.actions.act_window',
+                res_model: 'crm.lead',
+                views: [[false, "list"]],
+                domain: [['id', 'in', opportunity_ids]],
+                target: 'current',
+            });
+   }
+   async _OnClickRevenue(){
+        const IntervalValue = $('#timeInterval').find(":selected").val();
+        const result = await this.orm.call("crm.lead", "get_tiles_data", [IntervalValue], {});
+        const won_opportunity_ids = result.won_opportunity_ids
+        console.log(won_opportunity_ids)
+        const action = await this.actionService.doAction({
+                name: _t('My Revenue'),
+                type: 'ir.actions.act_window',
+                res_model: 'crm.lead',
+                views: [[false, "list"]],
+                domain: [['id', 'in', won_opportunity_ids]],
+                target: 'current',
+            });
+   }
+   async _OnClickWin(){
+        const IntervalValue = $('#timeInterval').find(":selected").val();
+        const result = await this.orm.call("crm.lead", "get_tiles_data", [IntervalValue], {});
+        const lead_ids = result.lead_ids
+        const action = await this.actionService.doAction({
+                name: _t('Win Ratio'),
+                type: 'ir.actions.act_window',
+                res_model: 'crm.lead',
+                views: [[false, "list"]],
+                domain: [['id', 'in', lead_ids]],
+                target: 'current',
+            });
+   }
+   renderChart(){
+        this.lost_lead_graph();
+        this.lead_medium_doughnut();
+        this.lead_campaign_linechart();
+        this.lead_activity_pie();
+       }
+       async lost_lead_graph(){
+        const IntervalValue = $('#timeInterval').find(":selected").val();
+        const data = await this.orm.call("crm.lead", 'get_tiles_data', [IntervalValue], {});
+
+        new Chart(
+             this.chartRef.el,
+            {
+              type: 'bar',
+              data: {
+                labels: data['lost_reason'],
+                datasets: [
+                  {
+                    label: 'Leads Count',
+                    data: data['lost_count']
+                  }
+                ]
+              }
+            }
+        );
+       }
+       async lead_medium_doughnut(){
+        const IntervalValue = $('#timeInterval').find(":selected").val();
+        const data = await this.orm.call("crm.lead", 'get_tiles_data', [IntervalValue], {});
+
+        new Chart(
+             this.doughnutRef.el,
+            {
+              type: "doughnut",
+              data: {
+                    labels: data['lead_medium'],
+                    datasets: [{
+                        backgroundColor: "black",
+                        data: data['lead_medium_count']
+                    }]
+              },
+              options: {
+              }
+            });
+       }
+       async lead_campaign_linechart(){
+        const IntervalValue = $('#timeInterval').find(":selected").val();
+        const data = await this.orm.call("crm.lead", 'get_tiles_data', [IntervalValue], {});
+
+        new Chart(
+             this.linechartRef.el,
+            {
+                type: "line",
+                data: {
+                    labels: data['lead_campaign'],
+                    datasets: [{
+                        label: 'Leads Count',
+                        data: data['lead_campaign_count'],
+                        pointBackgroundColor: "black",
+                    }]
+                },
+                option: {}
+            });
+        }
+        async lead_activity_pie(){
+        const IntervalValue = $('#timeInterval').find(":selected").val();
+        const data = await this.orm.call("crm.lead", 'get_tiles_data', [IntervalValue], {});
+
+        new Chart(
+             this.pieRef.el,
+            {
+                type: "pie",
+                data: {
+                    labels: data['lead_activity'],
+                    datasets: [{
+                        label: 'Leads Count',
+                        data: data['lead_activity_count'],
+                    }]
+                },
+                option: {}
+            });
+        }
+//        const time_interval = $('#timeIntervalDropdown').find(":selected").val()
 }
 CrmDashboard.template = "crm.CrmDashboard";
 actionRegistry.add("crm_dashboard_tag", CrmDashboard);
