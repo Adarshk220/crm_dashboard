@@ -1,5 +1,6 @@
 /**@odoo-module **/
 import { registry } from "@web/core/registry";
+import { useState } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { _t } from "@web/core/l10n/translation";
 import { Component, useRef, onWillStart, onMounted } from  "@odoo/owl";
@@ -15,6 +16,9 @@ class CrmDashboard extends Component {
          this.doughnutRef = useRef("lead_medium");
          this.linechartRef = useRef("lead_campaign");
          this.pieRef = useRef("lead_activity");
+//         this.state = useState({
+//            lead_data: []
+//         });
         onWillStart(async ()=>{
                await loadJS("https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js")
         })
@@ -187,6 +191,13 @@ class CrmDashboard extends Component {
                 option: {}
             });
         }
+        render_warehouse_location(){
+    this.orm.call("stock.picking", "display_location_warehouse", [{}]
+    ).then((result) => {
+        this.state.warehouse_data = result['warehouse']
+        this.state.location_data = result['location']
+    });
+}
 //        const time_interval = $('#timeIntervalDropdown').find(":selected").val()
 }
 CrmDashboard.template = "crm.CrmDashboard";

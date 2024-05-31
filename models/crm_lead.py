@@ -59,6 +59,7 @@ class CrmLead(models.Model):
         for lost_reason, count in lead_lost_count.items():
             lost_reasons.append(lost_reason)
             lost_reasons_counts.append(count)
+
             # lead-medium doughnut data
         lead_medium_count = {}
         for data in leads:
@@ -73,6 +74,7 @@ class CrmLead(models.Model):
         for medium, medium_count in lead_medium_count.items():
             mediums.append(medium)
             medium_counts.append(medium_count)
+
             # lead-Campaign Line chart
         lead_campaign_count = {}
         for data in leads:
@@ -87,10 +89,11 @@ class CrmLead(models.Model):
         for campaign, campaign_count in lead_campaign_count.items():
             campaigns.append(campaign)
             campaign_counts.append(campaign_count)
+
+            # Lead-Activity
         lead_activity_count = {}
         for data in leads:
             lead_activity = data.activity_ids.activity_type_id.name
-            print(lead_activity, data.name)
             if lead_activity in lead_activity_count:
                 lead_activity_count[lead_activity] += 1
             else:
@@ -100,6 +103,12 @@ class CrmLead(models.Model):
         for activity, activity_count in lead_activity_count.items():
             activities.append(activity)
             activity_counts.append(activity_count)
+
+            # Lead-Month Table
+        lead_by_month = self.search([('create_date', '>=', month_start_day)])
+        for data in lead_by_month:
+            lead_by_month_name = data.name
+            print(lead_by_month_name, data)
         return {
             'total_leads': len(my_leads),
             'lead_ids': my_leads.ids,
@@ -119,5 +128,4 @@ class CrmLead(models.Model):
             'lead_activity': activities,
             'lead_activity_count': activity_counts,
         }
-    # def get_lost_lead_graph(self):
 
