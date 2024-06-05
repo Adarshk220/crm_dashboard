@@ -1,3 +1,4 @@
 html .o_web_client > .o_action_manager{
     overflow: scroll;
 }
+#table:hover {background-color: coral;}
